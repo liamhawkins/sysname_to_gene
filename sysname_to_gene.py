@@ -2,8 +2,9 @@ import csv
 from collections import OrderedDict
 from Bio import Entrez
 import urllib
+import http
 
-FILE_LIST = ["heart_up", "kidney_down", "kidney_up", "liver_down", "liver_up", "lung_down", "lung_up", "muscle_down", "muscle_up"]
+FILE_LIST = ["./split_files/" + str(x) + "_all_genes" for x in range(18,46)]
 Entrez.email = "liam.hawkins@carleton.ca"
 
 def read_file(file):
@@ -24,7 +25,7 @@ def search_ids(sys_list, file):
             try:
                 print("{}/{}:{} - searching for {}".format(gene_num, len(sys_list), file, sys_name))
                 esearch_result = Entrez.esearch(db="gene", term=sys_name, retmod="xml")
-            except (TimeoutError, urllib.error.URLError) as e:
+            except (TimeoutError, urllib.error.URLError, http.client.RemoteDisconnected) as e:
                 print("Timed-out Trying Again")
                 continue
             break
@@ -58,7 +59,10 @@ def fetch_genes(id_dict):
 def parse_genes(id_dict):
     print("Parsing Genes")
     for sys_name in id_dict:
-        gene_name = id_dict[sys_name][1]['Entrezgene_gene']['Gene-ref']['Gene-ref_locus']
+        try:
+            gene_name = id_dict[sys_name][1]['Entrezgene_gene']['Gene-ref']['Gene-ref_locus']
+        except KeyError:
+            gene_name = "NOTFOUND"
         try:
             gene_mrna = id_dict[sys_name][1]['Entrezgene_locus'][0]['Gene-commentary_products'][0]['Gene-commentary_accession']
         except KeyError:
